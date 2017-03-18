@@ -251,28 +251,51 @@ static void * read_gpsd_thread (void *arg)
 
 	while (1) {
 
-          if ( ! gps_waiting(&gpsdata, TIMEOUT * 1000000)) {
-	    text_color_set(DW_COLOR_ERROR);
-	    dw_printf ("GPSD: Timeout waiting for GPS data.\n");
-	    /* Fall thru to read which should get error and bail out. */
-	  }
+		if (!gps_waiting(&gpsdata, TIMEOUT * 1000000)) {
+			text_color_set(DW_COLOR_ERROR);
+			dw_printf("GPSD: Timeout waiting for GPS data.\n");
+			/* Fall thru to read which should get error and bail out. */
+			text_color_set(DW_COLOR_INFO);
+			dw_printf("Resetting GPS device...\n");
+			system("/root/usbreset /dev/bus/usb/001/003");
+			sleep(3);
+			dw_printf("Restarting gpsd...\n");
+			system("/bin/systemctl restart gpsd");
+			sleep(3);
+			//dw_printf("Restarting direwolf...\n");
+			//system("/usr/bin/pkill -x direwolf");
+		}
 
-	  if (gps_read (&gpsdata) == -1) {
-	    text_color_set(DW_COLOR_ERROR);
+		int lost = 0;
+		while (1) {
+			if (gps_read(&gpsdata) == -1) {
+				lost = 1;
+				text_color_set(DW_COLOR_ERROR);
 
-	    dw_printf ("------------------------------------------\n");
-	    dw_printf ("GPSD: Lost communication with gpsd server.\n");
-	    dw_printf ("------------------------------------------\n");
+				dw_printf("----------------------------------------------------------\n");
+				dw_printf("GPSD: Lost communication with gpsd server, retrying in 5s.\n");
+				dw_printf("----------------------------------------------------------\n");
 
-	    info.fix = DWFIX_ERROR;
-	    if (s_debug >= 2) {
-	      text_color_set(DW_COLOR_DEBUG);
-	      dwgps_print ("GPSD: ", &info);
-	    }
-	    dwgps_set_data (&info);
+				sleep(5);
+				/*info.fix = DWFIX_ERROR;
+				if (s_debug >= 2) {
+				text_color_set(DW_COLOR_DEBUG);
+				dwgps_print("GPSD: ", &info);
+				}
+				dwgps_set_data(&info);
 
-	    break;   // Jump out of loop and terminate thread.
-	  }
+				break;   // Jump out of loop and terminate thread.
+				*/
+			}
+			else {
+				if (lost == 1) {
+					lost = 0;
+					text_color_set(DW_COLOR_INFO);
+					dw_printf("GPSD: Re-established communication with gpsd server\n");
+					break;
+				}
+			}
+		}
 
 	  switch (gpsdata.fix.mode) {
 	    default:
@@ -407,7 +430,8 @@ int main (int argc, char *argv[])
 	while (1) {
 	  dwfix_t fix;
 
-	  fix = dwgps_read (&info);
+	  fix = dwgps_read (&info)
+;
 	  text_color_set (DW_COLOR_INFO);
 	  switch (fix) {
 	    case DWFIX_2D:
