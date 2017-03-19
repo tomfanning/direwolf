@@ -179,6 +179,7 @@ static int q_d_opt = 0;			/* "-q d" Quiet, suppress the printing of decoded of A
 
 static struct misc_config_s misc_config;
 
+//struct misc_config_s get_config() { return misc_config; }
 
 int main (int argc, char *argv[])
 {

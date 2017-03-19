@@ -262,8 +262,8 @@ static void * read_gpsd_thread (void *arg)
 			dw_printf("Restarting gpsd...\n");
 			system("/bin/systemctl restart gpsd");
 			sleep(3);
-			//dw_printf("Restarting direwolf...\n");
-			//system("/usr/bin/pkill -x direwolf");
+			dw_printf("Killing direwolf...\n");
+			system("/usr/bin/pkill -x direwolf");
 		}
 
 		int lost = 0;
@@ -272,11 +272,22 @@ static void * read_gpsd_thread (void *arg)
 				lost = 1;
 				text_color_set(DW_COLOR_ERROR);
 
-				dw_printf("----------------------------------------------------------\n");
-				dw_printf("GPSD: Lost communication with gpsd server, retrying in 5s.\n");
-				dw_printf("----------------------------------------------------------\n");
+				dw_printf("-----------------------------------------------------------\n");
+				dw_printf("GPSD: Lost communication with gpsd server, killing direwolf\n");
+				dw_printf("-----------------------------------------------------------\n");
 
-				sleep(5);
+				//dw_printf("Killing direwolf...\n");
+				system("/usr/bin/pkill -x direwolf");
+
+				//sleep(5);
+
+				/*(void)gps_stream(&gps_data, WATCH_DISABLE, NULL);
+				(void)gps_close(&gps_data);
+
+				misc_config_s misc_config;
+
+				dwgpsd_init(&misc_config, 0);*/
+
 				/*info.fix = DWFIX_ERROR;
 				if (s_debug >= 2) {
 				text_color_set(DW_COLOR_DEBUG);
